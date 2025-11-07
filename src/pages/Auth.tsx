@@ -1,4 +1,4 @@
-
+// src/pages/Auth.tsx
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuthContext';
@@ -10,11 +10,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, Shield, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client'; // <-- static import (fix)
 
-/**
- * Authentication page component
- * Handles both login and signup flows with proper error handling and loading states
- */
+// Authentication page component
 const Auth = () => {
   // Form states
   const [email, setEmail] = useState('');
@@ -40,9 +38,6 @@ const Auth = () => {
   // Check if this is admin login
   const isAdminMode = searchParams.get('admin') === 'true';
 
-  /**
-   * Redirect authenticated users to appropriate dashboard
-   */
   useEffect(() => {
     if (!loading && isAuthenticated) {
       console.log('🔄 User authenticated, redirecting...', { isAdmin, isAdminMode });
@@ -50,7 +45,6 @@ const Auth = () => {
       if (isAdmin) {
         navigate('/admin', { replace: true });
       } else if (isAdminMode) {
-        // If they're trying to access admin but aren't admin, show error
         setError('You do not have admin privileges');
         return;
       } else {
@@ -59,9 +53,6 @@ const Auth = () => {
     }
   }, [isAuthenticated, isAdmin, loading, navigate, isAdminMode]);
 
-  /**
-   * Reset form fields
-   */
   const resetForm = () => {
     setEmail('');
     setPassword('');
@@ -74,15 +65,11 @@ const Auth = () => {
     setResetStep('request');
   };
 
-  /**
-   * Handle login form submission
-   */
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setActionLoading(true);
     setError('');
 
-    // Validation
     if (!email || !password) {
       setError('Please fill in all fields');
       setActionLoading(false);
@@ -106,7 +93,7 @@ const Auth = () => {
         description: "Welcome back!",
       });
 
-      // Note: Redirect will be handled by useEffect when auth state updates
+      // Redirect handled by useEffect when auth state updates
     } catch (error: any) {
       console.error('💥 Login exception:', error);
       setError('An unexpected error occurred');
@@ -114,15 +101,11 @@ const Auth = () => {
     }
   };
 
-  /**
-   * Handle signup form submission
-   */
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setActionLoading(true);
     setError('');
 
-    // Validation
     if (!email || !password || !confirmPassword || !fullName || !phone) {
       setError('Please fill in all fields');
       setActionLoading(false);
@@ -168,9 +151,6 @@ const Auth = () => {
     }
   };
 
-  /**
-   * Handle forgot password - request reset code
-   */
   const handleRequestReset = async (e: React.FormEvent) => {
     e.preventDefault();
     setActionLoading(true);
@@ -183,9 +163,7 @@ const Auth = () => {
     }
 
     try {
-      const { supabase } = await import('@/integrations/supabase/client');
-      
-      // Use secure function to verify email/phone and generate reset code
+      // Use existing static supabase import
       const { data, error: rpcError } = await supabase
         .rpc('request_password_reset', {
           user_email: email.trim(),
@@ -199,7 +177,6 @@ const Auth = () => {
         return;
       }
 
-      // data is an array with one result
       const result = data?.[0];
       
       if (!result?.success) {
@@ -223,9 +200,6 @@ const Auth = () => {
     }
   };
 
-  /**
-   * Handle password reset with code verification
-   */
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setActionLoading(true);
@@ -244,9 +218,7 @@ const Auth = () => {
     }
 
     try {
-      const { supabase } = await import('@/integrations/supabase/client');
-      
-      // Call edge function to securely reset password
+      // Use existing static supabase import
       const { data, error: functionError } = await supabase.functions.invoke('reset-password', {
         body: {
           email: email.trim(),
@@ -284,7 +256,6 @@ const Auth = () => {
     }
   };
 
-  // Show loading during auth check
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -296,7 +267,6 @@ const Auth = () => {
     );
   }
 
-  // If already authenticated, let useEffect handle the redirect
   if (!loading && isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
