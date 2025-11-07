@@ -1,7 +1,6 @@
-
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,9 +9,22 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Plus, Package, Upload } from 'lucide-react';
+import { Loader2, Plus, Package } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
-import { Link } from 'react-router-dom';
+
+// ✅ Helper function to sanitize timestamps and empty strings
+// Generic sanitizer — preserves the input type so TS stays happy
+const sanitizeTimestamps = <T extends Record<string, any>>(obj: T): T => {
+  const out: Record<string, any> = { ...obj };
+  for (const k of Object.keys(out)) {
+    if (/(_at|_date|date|time)$/i.test(k) && (out[k] === '' || out[k] === undefined)) {
+      out[k] = null;
+    }
+    if (out[k] === '') out[k] = null;
+  }
+  return out as T;
+};
+
 
 const Dashboard = () => {
   const { user, profile, signOut } = useAuth();
@@ -21,7 +33,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
-  
+
   const [productForm, setProductForm] = useState({
     name: '',
     price: '',
@@ -50,21 +62,19 @@ const Dashboard = () => {
 
       if (uploadError) throw uploadError;
 
-      const { data } = supabase.storage
-        .from('product-images')
-        .getPublicUrl(filePath);
+      const { data } = supabase.storage.from('product-images').getPublicUrl(filePath);
 
       setProductForm({ ...productForm, image_url: data.publicUrl });
       toast({
-        title: "Success",
-        description: "Image uploaded successfully",
+        title: 'Success',
+        description: 'Image uploaded successfully',
       });
     } catch (error: any) {
       console.error('Error uploading image:', error);
       toast({
-        title: "Error",
-        description: "Failed to upload image",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to upload image',
+        variant: 'destructive',
       });
       setImageFile(null);
     } finally {
@@ -81,7 +91,7 @@ const Dashboard = () => {
         throw new Error('Product name and price are required');
       }
 
-      const productData = {
+      let productData = {
         name: productForm.name.trim(),
         price: parseFloat(productForm.price),
         description: productForm.description.trim() || null,
@@ -89,17 +99,18 @@ const Dashboard = () => {
         stock_quantity: parseInt(productForm.stock_quantity) || 10,
         is_active: productForm.is_active,
         image_url: productForm.image_url || null
+        // add timestamp fields if needed later, e.g. created_at: new Date().toISOString()
       };
 
-      const { error } = await supabase
-        .from('products')
-        .insert([productData]);
+      // ✅ Sanitize before insert (fixes timestamptz "" error)
+      productData = sanitizeTimestamps(productData);
 
+      const { error } = await supabase.from('products').insert([productData]);
       if (error) throw error;
 
       toast({
-        title: "Success",
-        description: "Product created successfully",
+        title: 'Success',
+        description: 'Product created successfully',
       });
 
       // Reset form
@@ -117,9 +128,9 @@ const Dashboard = () => {
     } catch (error: any) {
       console.error('Error creating product:', error);
       toast({
-        title: "Error",
-        description: error.message || "Failed to create product",
-        variant: "destructive",
+        title: 'Error',
+        description: error.message || 'Failed to create product',
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
@@ -133,9 +144,9 @@ const Dashboard = () => {
     } catch (error) {
       console.error('Error signing out:', error);
       toast({
-        title: "Error",
-        description: "Failed to sign out",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to sign out',
+        variant: 'destructive',
       });
     }
   };
@@ -169,7 +180,7 @@ const Dashboard = () => {
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            
+
             {/* User Info Card */}
             <Card>
               <CardHeader>
@@ -222,7 +233,7 @@ const Dashboard = () => {
                       placeholder="Enter product name"
                     />
                   </div>
-                  
+
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="price">Price (₹) *</Label>
@@ -252,7 +263,12 @@ const Dashboard = () => {
 
                   <div>
                     <Label htmlFor="category">Category</Label>
-                    <Select value={productForm.category} onValueChange={(value: 'chicken' | 'red_meat' | 'chilli_condiments' | 'other') => setProductForm({ ...productForm, category: value })}>
+                    <Select
+                      value={productForm.category}
+                      onValueChange={(value: 'chicken' | 'red_meat' | 'chilli_condiments' | 'other') =>
+                        setProductForm({ ...productForm, category: value })
+                      }
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select a category" />
                       </SelectTrigger>

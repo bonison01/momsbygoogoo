@@ -39,9 +39,9 @@ const ProductManagement = () => {
     stock_quantity: 0,
     is_active: true,
     featured: false,
-    created_at: '',
-    updated_at: '',
-  });
+    created_at: null as any,
+    updated_at: null as any,
+  } as Product);
 
   // Redirect if not admin
   useEffect(() => {
@@ -65,13 +65,13 @@ const ProductManagement = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setProducts(data || []);
+      setProducts((data as Product[]) || []);
     } catch (error: any) {
       console.error('Error fetching products:', error);
       toast({
-        title: "Error",
-        description: "Failed to fetch products",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to fetch products',
+        variant: 'destructive',
       });
     } finally {
       setLoadingProducts(false);
@@ -85,18 +85,20 @@ const ProductManagement = () => {
     } catch (error) {
       console.error('Error signing out:', error);
       toast({
-        title: "Error",
-        description: "Failed to sign out",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to sign out',
+        variant: 'destructive',
       });
     }
   };
 
   const handleEdit = (product: Product) => {
     setEditingProduct(product);
-    const existingImages = [];
-    if (product.image_url) existingImages.push(product.image_url);
-    if (product.image_urls) existingImages.push(...product.image_urls);
+    const existingImages: string[] = [];
+    if (product.image_url) existingImages.push(product.image_url as string);
+    if (product.image_urls && Array.isArray(product.image_urls)) {
+      existingImages.push(...(product.image_urls as string[]));
+    }
     setEditingImages(existingImages);
   };
 
@@ -111,26 +113,44 @@ const ProductManagement = () => {
     }
 
     try {
-      const { error } = await supabase
-        .from('products')
-        .delete()
-        .eq('id', id);
+      const { error } = await supabase.from('products').delete().eq('id', id);
 
       if (error) throw error;
 
       setProducts(products.filter((product) => product.id !== id));
       toast({
-        title: "Success",
-        description: "Product deleted successfully",
+        title: 'Success',
+        description: 'Product deleted successfully',
       });
     } catch (error: any) {
       console.error('Error deleting product:', error);
       toast({
-        title: "Error",
-        description: "Failed to delete product",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to delete product',
+        variant: 'destructive',
       });
     }
+  };
+
+  /**
+   * sanitizeProductPayload
+   * - removes properties whose value is an empty string ("")
+   * - converts empty arrays to null (so DB won't receive [])
+   * - leaves null values intact
+   * - returns Partial<Product>
+   */
+  const sanitizeProductPayload = (payload: Record<string, any>): Partial<Product> => {
+    const cleaned: Partial<Product> = {};
+    Object.entries(payload).forEach(([k, v]) => {
+      if (v === '') return;
+      if (Array.isArray(v) && v.length === 0) {
+        (cleaned as any)[k] = null;
+        return;
+      }
+      if (v === undefined) return;
+      (cleaned as any)[k] = v;
+    });
+    return cleaned;
   };
 
   const handleUpdate = async () => {
@@ -141,28 +161,36 @@ const ProductManagement = () => {
         ...editingProduct,
         image_url: editingImages.length > 0 ? editingImages[0] : null,
         image_urls: editingImages.length > 1 ? editingImages.slice(1) : null,
+        // updated_at: new Date().toISOString(), // optional client timestamp
       };
 
-      const { error } = await supabase
+      const payload = sanitizeProductPayload(productData);
+
+      // CAST HERE to satisfy Supabase/TypeScript overloads:
+      // we sanitized payload at runtime; now tell TS it matches Product shape.
+      const { data, error } = await supabase
         .from('products')
-        .update(productData)
-        .eq('id', editingProduct.id);
+        .update(payload as unknown as Product)
+        .eq('id', editingProduct.id)
+        .select();
 
       if (error) throw error;
 
-      setProducts(products.map((product) => (product.id === editingProduct.id ? productData : product)));
+      const updatedRow = Array.isArray(data) && data[0] ? (data[0] as Product) : ({ ...editingProduct, ...productData } as Product);
+
+      setProducts(products.map((product) => (product.id === editingProduct.id ? updatedRow : product)));
       setEditingProduct(null);
       setEditingImages([]);
       toast({
-        title: "Success",
-        description: "Product updated successfully",
+        title: 'Success',
+        description: 'Product updated successfully',
       });
     } catch (error: any) {
       console.error('Error updating product:', error);
       toast({
-        title: "Error",
-        description: "Failed to update product",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to update product',
+        variant: 'destructive',
       });
     }
   };
@@ -173,16 +201,22 @@ const ProductManagement = () => {
         ...newProduct,
         image_url: newProductImages.length > 0 ? newProductImages[0] : null,
         image_urls: newProductImages.length > 1 ? newProductImages.slice(1) : null,
+        // created_at: new Date().toISOString(), // optional client timestamp
       };
 
+      const payload = sanitizeProductPayload(productData);
+
+      // CAST HERE to satisfy Supabase/TypeScript overloads:
       const { data, error } = await supabase
         .from('products')
-        .insert([productData])
+        .insert([payload as unknown as Product])
         .select();
 
       if (error) throw error;
 
-      setProducts([...products, data[0]]);
+      const created = Array.isArray(data) && data[0] ? (data[0] as Product) : (payload as Product);
+
+      setProducts([created, ...products]);
       setIsCreating(false);
       setNewProductImages([]);
       setNewProduct({
@@ -200,19 +234,19 @@ const ProductManagement = () => {
         stock_quantity: 0,
         is_active: true,
         featured: false,
-        created_at: '',
-        updated_at: '',
-      });
+        created_at: null as any,
+        updated_at: null as any,
+      } as Product);
       toast({
-        title: "Success",
-        description: "Product created successfully",
+        title: 'Success',
+        description: 'Product created successfully',
       });
     } catch (error: any) {
       console.error('Error creating product:', error);
       toast({
-        title: "Error",
-        description: "Failed to create product",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to create product',
+        variant: 'destructive',
       });
     }
   };
@@ -248,19 +282,11 @@ const ProductManagement = () => {
               <p className="text-gray-600 mt-1">Manage your products, orders, and website content</p>
             </div>
             <div className="flex items-center space-x-4">
-              <Button
-                onClick={() => navigate('/')}
-                variant="outline"
-                className="flex items-center space-x-2"
-              >
+              <Button onClick={() => navigate('/')} variant="outline" className="flex items-center space-x-2">
                 <Home className="h-4 w-4" />
                 <span>Home</span>
               </Button>
-              <Button 
-                onClick={handleSignOut} 
-                variant="outline"
-                className="flex items-center space-x-2"
-              >
+              <Button onClick={handleSignOut} variant="outline" className="flex items-center space-x-2">
                 <LogOut className="h-4 w-4" />
                 <span>Sign Out</span>
               </Button>
@@ -291,11 +317,7 @@ const ProductManagement = () => {
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-gray-900">Products</h2>
                 <div className="flex items-center space-x-2">
-                  <Button 
-                    onClick={() => setShowCSVUpload(true)} 
-                    variant="outline"
-                    className="flex items-center space-x-2"
-                  >
+                  <Button onClick={() => setShowCSVUpload(true)} variant="outline" className="flex items-center space-x-2">
                     <Upload className="h-4 w-4" />
                     <span>Bulk Upload</span>
                   </Button>
@@ -306,12 +328,7 @@ const ProductManagement = () => {
                 </div>
               </div>
 
-              <ProductList
-                products={products}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                loading={loadingProducts}
-              />
+              <ProductList products={products} onEdit={handleEdit} onDelete={handleDelete} loading={loadingProducts} />
             </TabsContent>
           </Tabs>
 
@@ -320,12 +337,7 @@ const ProductManagement = () => {
             <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
               <div className="relative p-4 w-full max-w-2xl">
                 <div className="relative">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowCSVUpload(false)}
-                    className="absolute top-2 right-2 z-10"
-                  >
+                  <Button variant="ghost" size="sm" onClick={() => setShowCSVUpload(false)} className="absolute top-2 right-2 z-10">
                     ×
                   </Button>
                   <CSVUpload onProductsUploaded={handleCSVProductsUploaded} />
