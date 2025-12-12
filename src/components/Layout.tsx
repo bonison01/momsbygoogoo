@@ -28,7 +28,7 @@ const Layout = ({ children }: LayoutProps) => {
 
       {/* Floating WhatsApp Button */}
       <a
-        href="https://wa.me/916009861266?text=Hi%20Mateng%2C%20I%20have%20an%20enquiry"
+        href="https://wa.aisensy.com/aaasob"
         target="_blank"
         rel="noopener noreferrer"
       >
