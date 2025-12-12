@@ -23,16 +23,24 @@ const Footer = () => {
               Quality food products made with love and passion.
             </p>
             <div className="flex space-x-4">
-              <a href="#" className="text-gray-300 hover:text-white transition-colors">
-                Facebook
-              </a>
-              <a href="#" className="text-gray-300 hover:text-white transition-colors">
-                Instagram
-              </a>
-              <a href="#" className="text-gray-300 hover:text-white transition-colors">
-                Twitter
-              </a>
-            </div>
+  <a 
+    href="https://www.instagram.com/momsbygoogoofoods/" 
+    target="_blank"
+    rel="noopener noreferrer"
+    className="text-gray-300 hover:text-white transition-colors"
+  >
+    {/* Instagram Icon */}
+    <svg 
+      xmlns="http://www.w3.org/2000/svg" 
+      fill="currentColor" 
+      viewBox="0 0 24 24" 
+      className="h-6 w-6"
+    >
+      <path d="M7.5 2h9A5.5 5.5 0 0 1 22 7.5v9A5.5 5.5 0 0 1 16.5 22h-9A5.5 5.5 0 0 1 2 16.5v-9A5.5 5.5 0 0 1 7.5 2zm0 2A3.5 3.5 0 0 0 4 7.5v9A3.5 3.5 0 0 0 7.5 20h9a3.5 3.5 0 0 0 3.5-3.5v-9A3.5 3.5 0 0 0 16.5 4h-9zm9.75 1.25a1.25 1.25 0 1 1 0 2.5a1.25 1.25 0 0 1 0-2.5zM12 7a5 5 0 1 1 0 10a5 5 0 0 1 0-10zm0 2a3 3 0 1 0 0 6a3 3 0 0 0 0-6z" />
+    </svg>
+  </a>
+</div>
+
           </div>
 
           {/* Quick Links */}
@@ -61,7 +69,7 @@ const Footer = () => {
 
         <div className="border-t border-gray-700 mt-8 pt-8 text-center">
           <p className="text-gray-300">
-            © 2024 Googoo Foods. All rights reserved.
+            © 2025 Googoo Foods. All rights reserved.
           </p>
         </div>
       </div>
