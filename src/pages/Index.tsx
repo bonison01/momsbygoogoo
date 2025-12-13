@@ -246,8 +246,8 @@ const Index = () => {
           <div className="flex gap-6 overflow-x-auto no-scrollbar pb-2">
             {[
               { label: "All", value: "all", img: "/all.png" },
-              { label: "Chicken", value: "chicken", img: "/chicken.jpg" },
-              { label: "Red Meat", value: "red_meat", img: "/red.jpg" },
+              { label: "Chicken Products", value: "chicken", img: "/chicken.jpg" },
+              { label: "Red Meat Products", value: "red_meat", img: "/red.jpg" },
               { label: "Chilli Condiments", value: "chilli_condiments", img: "/chilli.jpg" },
             ].map((cat, i) => (
               <button

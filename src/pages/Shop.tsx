@@ -8,9 +8,16 @@ import { Loader2, ShoppingCart, Search, Filter } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
 import { useNavigate, useLocation } from 'react-router-dom';
 
+/* ================= TYPES ================= */
 interface Product {
   id: string;
   name: string;
@@ -27,6 +34,7 @@ interface GroupedProducts {
   [category: string]: Product[];
 }
 
+/* ================= SHOP ================= */
 const Shop = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
@@ -41,14 +49,11 @@ const Shop = () => {
   const { toast } = useToast();
   const { addToCart, cartCount, refreshCart } = useCart();
 
-  // ⭐ Read category from URL (coming from Home page)
+  /* ---------- Read category from URL ---------- */
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const categoryFromURL = params.get("category");
-
-    if (categoryFromURL) {
-      setSelectedCategory(categoryFromURL);
-    }
+    if (categoryFromURL) setSelectedCategory(categoryFromURL);
   }, [location.search]);
 
   useEffect(() => {
@@ -59,6 +64,7 @@ const Shop = () => {
     filterProducts();
   }, [products, searchTerm, selectedCategory]);
 
+  /* ---------- Fetch Products ---------- */
   const fetchProducts = async () => {
     try {
       const { data, error } = await supabase
@@ -69,17 +75,22 @@ const Shop = () => {
 
       if (error) throw error;
       setProducts(data || []);
-    } catch (err) {
-      toast({ title: "Error", description: "Failed to load products.", variant: "destructive" });
+    } catch {
+      toast({
+        title: "Error",
+        description: "Failed to load products.",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
   };
 
+  /* ---------- Filter Products ---------- */
   const filterProducts = () => {
     let filtered = products;
 
-    if (searchTerm.trim() !== '') {
+    if (searchTerm.trim()) {
       const t = searchTerm.toLowerCase();
       filtered = filtered.filter(
         p =>
@@ -113,14 +124,19 @@ const Shop = () => {
     setGroupedProducts(grouped);
   };
 
+  /* ---------- Cart ---------- */
   const handleAddToCart = async (product: Product, e?: any) => {
     if (e) e.stopPropagation();
     try {
       await addToCart(product.id, 1);
-      toast({ title: "Added!", description: `${product.name} added to cart.` });
       await refreshCart();
+      toast({ title: "Added!", description: `${product.name} added to cart.` });
     } catch {
-      toast({ title: "Error", description: "Failed to add.", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: "Failed to add.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -130,11 +146,15 @@ const Shop = () => {
       await refreshCart();
       navigate('/checkout');
     } catch {
-      toast({ title: "Error", description: "Unable to proceed.", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: "Unable to proceed.",
+        variant: "destructive"
+      });
     }
   };
 
-  // PRODUCT CARD
+  /* ---------- PRODUCT CARD ---------- */
   const renderProductCard = (product: Product) => {
     const price = product.offer_price ?? product.price;
     const discount = product.offer_price
@@ -148,7 +168,10 @@ const Shop = () => {
         className="group bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all cursor-pointer"
       >
         <div className="relative aspect-square bg-gray-50">
-          <img src={product.image_url || "/placeholder.svg"} className="w-full h-full object-cover" />
+          <img
+            src={product.image_url || "/placeholder.svg"}
+            className="w-full h-full object-cover"
+          />
 
           {discount && (
             <div className="absolute left-2 top-2 bg-red-500 text-white text-xs px-2 py-1 rounded">
@@ -158,29 +181,23 @@ const Shop = () => {
 
           <button
             onClick={(e) => handleAddToCart(product, e)}
-            className="hidden group-hover:flex sm:flex absolute bottom-2 right-2 
-              bg-white border border-[#14710F] text-[#14710F] px-3 py-1.5 rounded-lg text-sm shadow-sm 
-              hover:bg-[#14710F] hover:text-white transition"
-          >
-            Add
-          </button>
-
-          <button
-            onClick={(e) => handleAddToCart(product, e)}
-            className="sm:hidden absolute bottom-2 right-2 bg-white border border-[#14710F] text-[#14710F] 
-              px-3 py-1.5 rounded-lg text-sm shadow-sm hover:bg-[#14710F] hover:text-white"
+            className="absolute bottom-2 right-2 bg-white border border-[#14710F] text-[#14710F] px-3 py-1.5 rounded-lg text-sm shadow-sm hover:bg-[#14710F] hover:text-white transition"
           >
             Add
           </button>
         </div>
 
         <div className="p-4">
-          <h3 className="text-sm font-semibold text-gray-900 line-clamp-1">{product.name}</h3>
+          <h3 className="text-sm font-semibold text-gray-900 line-clamp-1">
+            {product.name}
+          </h3>
 
           <div className="flex items-center gap-2 mt-1">
             <span className="text-lg font-bold">₹{price}</span>
             {product.offer_price && (
-              <span className="text-xs line-through text-gray-400">₹{product.price}</span>
+              <span className="text-xs line-through text-gray-400">
+                ₹{product.price}
+              </span>
             )}
           </div>
 
@@ -198,36 +215,25 @@ const Shop = () => {
     );
   };
 
+  /* ================= RENDER ================= */
   return (
     <Layout>
       <CartSidebar isOpen={cartOpen} onClose={() => setCartOpen(false)} />
 
-      {/* Floating Cart Button */}
-      {/* <Button
-        onClick={() => setCartOpen(true)}
-        className="fixed bottom-6 right-6 z-40 rounded-full h-14 w-14 bg-[#14710F] text-white hover:bg-[#0f5c0c]"
-      >
-        <ShoppingCart className="h-6 w-6" />
-        {cartCount > 0 && (
-          <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center">
-            {cartCount}
-          </span>
-        )}
-      </Button> */}
-
-      {/* HERO SECTION */}
+      {/* HERO */}
       <section className="bg-gradient-to-r from-black to-gray-800 text-white py-16 text-center">
         <h1 className="text-4xl md:text-5xl font-bold mb-4">Our Products</h1>
-        <p className="text-lg md:text-xl">Discover our carefully crafted collection</p>
+        <p className="text-lg md:text-xl">
+          Discover our carefully crafted collection
+        </p>
       </section>
 
-      {/* CATEGORY SECTION */}
-      <section className="py-10 bg-white">
+      {/* CATEGORY SECTION — BLINKIT STYLE */}
+      <section className="py-6 bg-white">
         <div className="max-w-7xl mx-auto px-6">
-          <h2 className="text-2xl font-bold mb-6">Shop by Categories</h2>
+          <h2 className="text-xl font-bold mb-4">Shop by Categories</h2>
 
-          <div className="grid grid-cols-4 md:grid-cols-8 gap-4">
-
+          <div className="grid grid-cols-4 gap-3 sm:grid-cols-5 md:grid-cols-8 md:gap-4">
             <CategoryTile
               label="All"
               value="all"
@@ -235,23 +241,20 @@ const Shop = () => {
               selected={selectedCategory === 'all'}
               onClick={() => setSelectedCategory('all')}
             />
-
             <CategoryTile
-              label="Chicken"
+              label="Chicken Products"
               value="chicken"
               img="/chicken.jpg"
               selected={selectedCategory === 'chicken'}
               onClick={() => setSelectedCategory('chicken')}
             />
-
             <CategoryTile
-              label="Red Meat"
+              label="Red Meat Products"
               value="red_meat"
               img="/red.jpg"
               selected={selectedCategory === 'red_meat'}
               onClick={() => setSelectedCategory('red_meat')}
             />
-
             <CategoryTile
               label="Chilli Condiments"
               value="chilli_condiments"
@@ -259,16 +262,14 @@ const Shop = () => {
               selected={selectedCategory === 'chilli_condiments'}
               onClick={() => setSelectedCategory('chilli_condiments')}
             />
-
           </div>
         </div>
       </section>
 
-      {/* SEARCH + FILTERS */}
+      {/* SEARCH + FILTER */}
       <section className="py-8 bg-gray-50 border-b">
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-
             <div className="relative w-full md:w-1/2">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
@@ -281,7 +282,10 @@ const Shop = () => {
 
             <div className="flex items-center space-x-2">
               <Filter className="h-4 w-4 text-gray-500" />
-              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <Select
+                value={selectedCategory}
+                onValueChange={setSelectedCategory}
+              >
                 <SelectTrigger className="w-48">
                   <SelectValue placeholder="Filter" />
                 </SelectTrigger>
@@ -289,11 +293,12 @@ const Shop = () => {
                   <SelectItem value="all">All</SelectItem>
                   <SelectItem value="chicken">Chicken</SelectItem>
                   <SelectItem value="red_meat">Red Meat</SelectItem>
-                  <SelectItem value="chilli_condiments">Chilli Condiments</SelectItem>
+                  <SelectItem value="chilli_condiments">
+                    Chilli Condiments
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
-
           </div>
         </div>
       </section>
@@ -301,32 +306,27 @@ const Shop = () => {
       {/* PRODUCT GRID */}
       <section className="py-12 bg-white">
         <div className="max-w-7xl mx-auto px-6">
-
           {loading ? (
             <div className="flex justify-center py-20">
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>
           ) : (
-            <>
-              {Object.entries(groupedProducts).map(([category, items]) => (
-                <div key={category} className="mb-12">
-                  <h2 className="text-xl font-bold mb-4">{category}</h2>
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                    {items.map(renderProductCard)}
-                  </div>
+            Object.entries(groupedProducts).map(([category, items]) => (
+              <div key={category} className="mb-12">
+                <h2 className="text-xl font-bold mb-4">{category}</h2>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                  {items.map(renderProductCard)}
                 </div>
-              ))}
-            </>
+              </div>
+            ))
           )}
-
         </div>
       </section>
-
     </Layout>
   );
 };
 
-// CATEGORY TILE COMPONENT
+/* ================= CATEGORY TILE ================= */
 function CategoryTile({
   img,
   label,
@@ -344,12 +344,28 @@ function CategoryTile({
     <div
       onClick={onClick}
       className={`
-        cursor-pointer flex flex-col items-center p-3 rounded-xl shadow-sm transition-all
-        ${selected ? "bg-[#14710F] text-white" : "bg-gray-100 hover:bg-gray-200"}
+        cursor-pointer flex flex-col items-center
+        px-2 py-3 rounded-xl transition
+        ${selected ? "bg-[#14710F]/10" : "bg-gray-50 hover:bg-gray-100"}
       `}
     >
-      <img src={img} className="h-20 w-20 rounded-full object-cover" />
-      <span className="mt-2 text-sm font-semibold">{label}</span>
+      <div
+        className={`
+          w-14 h-14 rounded-xl overflow-hidden flex items-center justify-center
+          ${selected ? "ring-2 ring-[#14710F]" : ""}
+        `}
+      >
+        <img src={img} className="w-full h-full object-cover" />
+      </div>
+
+      <span
+        className={`
+          mt-2 text-[11px] font-medium text-center leading-tight
+          ${selected ? "text-[#14710F]" : "text-gray-700"}
+        `}
+      >
+        {label}
+      </span>
     </div>
   );
 }
