@@ -131,15 +131,19 @@ const Contact = () => {
                   <div className="space-y-3">
                     <div>
                       <span className="font-medium text-gray-700">Email:</span>
-                      <span className="text-gray-600 ml-2">hello@googoofoods.com</span>
+                      <span className="text-gray-600 ml-2">momsbygoogoofoods@gmail.com</span>
                     </div>
                     <div>
                       <span className="font-medium text-gray-700">Phone:</span>
-                      <span className="text-gray-600 ml-2">(555) 123-4567</span>
+                      <span className="text-gray-600 ml-2">(+91) 87948 79812</span>
                     </div>
                     <div>
-                      <span className="font-medium text-gray-700">Address:</span>
-                      <span className="text-gray-600 ml-2">123 Traditional Way, Flavor City, FC 12345</span>
+                      <span className="font-medium text-gray-700">Address 1:</span>
+                      <span className="text-gray-600 ml-2">Singjamei Chingamakha</span>
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-700">Address 2:</span>
+                      <span className="text-gray-600 ml-2">Yaiskul, Opposite to Kabui Khul Yaiskul</span>
                     </div>
                   </div>
                 </div>
