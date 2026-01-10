@@ -582,6 +582,9 @@ const Checkout = () => {
                       <span>Total:</span>
                       <span>₹{displayTotal}</span>
                     </div>
+                    <div>
+                          <p className="text-sm text-gray-600">Additional delivery charges may apply on final invoice.</p>
+                        </div>
                   </div>
                 </div>
               </CardContent>

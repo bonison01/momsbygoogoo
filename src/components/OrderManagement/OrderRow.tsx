@@ -1,5 +1,13 @@
 import { TableCell, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select';
 import { Edit, Save, X, Eye } from 'lucide-react';
 import { Order, EditingOrder } from './types';
 
@@ -88,11 +96,56 @@ const OrderRow = ({
       <TableCell>{order.status}</TableCell>
 
       {/* Shipping Status */}
-      <TableCell>{order.shipping_status}</TableCell>
+      <TableCell>
+        {isEditing ? (
+          <Select
+            value={editingOrder.shipping_status}
+            onValueChange={(v) =>
+              onFieldChange('shipping_status', v)
+            }
+          >
+            <SelectTrigger className="w-[140px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="packed">Packed</SelectItem>
+              <SelectItem value="shipped">Shipped</SelectItem>
+              <SelectItem value="delivered">Delivered</SelectItem>
+            </SelectContent>
+          </Select>
+        ) : (
+          order.shipping_status
+        )}
+      </TableCell>
 
       {/* Courier Info */}
       <TableCell>
-        {order.courier_name ? (
+        {isEditing ? (
+          <div className="space-y-2">
+            <Input
+              placeholder="Courier name"
+              value={editingOrder.courier_name}
+              onChange={(e) =>
+                onFieldChange('courier_name', e.target.value)
+              }
+            />
+            <Input
+              placeholder="Courier contact"
+              value={editingOrder.courier_contact}
+              onChange={(e) =>
+                onFieldChange('courier_contact', e.target.value)
+              }
+            />
+            <Input
+              placeholder="Tracking ID"
+              value={editingOrder.tracking_id}
+              onChange={(e) =>
+                onFieldChange('tracking_id', e.target.value)
+              }
+            />
+          </div>
+        ) : order.courier_name ? (
           <>
             <p>{order.courier_name}</p>
             <p className="text-sm text-muted-foreground">
@@ -118,12 +171,20 @@ const OrderRow = ({
             <Button size="sm" onClick={onSave} disabled={saving}>
               <Save className="h-4 w-4" />
             </Button>
-            <Button size="sm" variant="outline" onClick={onCancelEdit}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onCancelEdit}
+            >
               <X className="h-4 w-4" />
             </Button>
           </>
         ) : (
-          <Button size="sm" variant="outline" onClick={() => onEdit(order)}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => onEdit(order)}
+          >
             <Edit className="h-4 w-4" />
           </Button>
         )}

@@ -64,8 +64,8 @@ const OrderDetailsModal = ({ order, onClose }: Props) => {
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
-    // doc.text('Logistics • Delivery • Commerce Enablement', 14, 24);
-    // doc.text('GSTIN: 14XXXXX1234X1Z5', 14, 29);
+    doc.text('momsbygoogoofoods@gmail.com •(+91) 60098 09060 ', 14, 24);
+    doc.text('Address: Singjamei Chingamakha, Imphal, Manipur-795001', 14, 29);
 
     doc.text(`Invoice No: ${invoiceNo}`, 140, 18);
     doc.text(`Invoice Date: ${date}`, 140, 24);
