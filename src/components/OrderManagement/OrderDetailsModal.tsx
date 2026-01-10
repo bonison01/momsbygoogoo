@@ -60,12 +60,12 @@ const OrderDetailsModal = ({ order, onClose }: Props) => {
     /* ---------- HEADER ---------- */
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(20);
-    doc.text('JUSTMATENG SERVICE PVT. LTD.', 14, 18);
+    doc.text('Moms by Goo Goo Foods', 14, 18);
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
-    doc.text('Logistics • Delivery • Commerce Enablement', 14, 24);
-    doc.text('GSTIN: 14XXXXX1234X1Z5', 14, 29);
+    // doc.text('Logistics • Delivery • Commerce Enablement', 14, 24);
+    // doc.text('GSTIN: 14XXXXX1234X1Z5', 14, 29);
 
     doc.text(`Invoice No: ${invoiceNo}`, 140, 18);
     doc.text(`Invoice Date: ${date}`, 140, 24);
