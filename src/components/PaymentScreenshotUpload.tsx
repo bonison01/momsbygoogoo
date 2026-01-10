@@ -84,7 +84,7 @@ const PaymentScreenshotUpload = ({
           <div className="flex justify-center mb-4">
             <div className="bg-white p-4 rounded-lg shadow-md">
               <img
-                src="/lovable-uploads/96a97ecf-07a2-4ca9-90c6-5bef5e37e2c2.png"
+                src="/qr_payment.jpg"
                 alt="Payment QR Code"
                 className="w-48 h-48 mx-auto"
               />
@@ -98,7 +98,7 @@ const PaymentScreenshotUpload = ({
           </p>
           <div className="mt-4 p-3 bg-blue-50 rounded-md">
             <p className="text-blue-800 text-sm font-medium">
-              UPI ID: momsgoogoo@paytm
+              UPI ID: 8414876432@okbizaxis
             </p>
           </div>
         </div>
