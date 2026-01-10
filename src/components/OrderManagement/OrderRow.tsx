@@ -1,13 +1,9 @@
-
 import { TableCell, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Edit, Save, X } from 'lucide-react';
+import { Edit, Save, X, Eye } from 'lucide-react';
 import { Order, EditingOrder } from './types';
-import PaymentCell from './PaymentCell';
-import StatusCell from './StatusCell';
-import CourierInfoCell from './CourierInfoCell';
 
-interface OrderRowProps {
+interface Props {
   order: Order;
   editingOrder: EditingOrder | null;
   saving: boolean;
@@ -15,102 +11,120 @@ interface OrderRowProps {
   onSave: () => void;
   onCancelEdit: () => void;
   onFieldChange: (field: keyof EditingOrder, value: string) => void;
+  onView: () => void;
 }
 
-const OrderRow = ({ 
-  order, 
-  editingOrder, 
-  saving, 
-  onEdit, 
-  onSave, 
-  onCancelEdit, 
-  onFieldChange 
-}: OrderRowProps) => {
+const OrderRow = ({
+  order,
+  editingOrder,
+  saving,
+  onEdit,
+  onSave,
+  onCancelEdit,
+  onFieldChange,
+  onView,
+}: Props) => {
   const isEditing = editingOrder?.id === order.id;
 
+  const itemCount = order.order_items.length;
+
+  const itemNames = order.order_items
+    .map(item => item.product?.name)
+    .filter(Boolean)
+    .join(', ');
+
   return (
-    <TableRow className="hover:bg-gray-50 transition-colors">
-      <TableCell className="font-medium">
-        #{order.id.slice(0, 8)}
-      </TableCell>
+    <TableRow>
+      {/* Order ID */}
+      <TableCell>#{order.id.slice(0, 8)}</TableCell>
+
+      {/* Customer */}
       <TableCell>
-        <div>
-          <p className="font-medium">{order.user_profile?.full_name || 'N/A'}</p>
-          <p className="text-sm text-gray-500">{order.user_profile?.email || 'N/A'}</p>
+        <div className="flex flex-col">
+          <p className="font-medium">{order.customer.name}</p>
+
+          {order.customer.email && (
+            <p className="text-sm text-muted-foreground">
+              {order.customer.email}
+            </p>
+          )}
+
+          {order.customer.phone && (
+            <p className="text-sm text-muted-foreground">
+              📞 {order.customer.phone}
+            </p>
+          )}
+
+          {order.customer.is_guest && (
+            <span className="text-xs font-medium text-orange-600">
+              Guest Order
+            </span>
+          )}
         </div>
       </TableCell>
+
+      {/* Items */}
       <TableCell>
-        <div className="text-sm">
-          {order.order_items?.map((item, idx) => (
-            <div key={item.id}>
-              {item.product?.name || 'Unknown Product'} (x{item.quantity})
-              {idx < order.order_items.length - 1 && <br />}
-            </div>
-          ))}
+        <div className="flex flex-col">
+          <span className="font-medium">
+            {itemCount} item{itemCount > 1 ? 's' : ''}
+          </span>
+
+          {itemNames && (
+            <span className="text-xs text-muted-foreground truncate max-w-[200px]">
+              {itemNames}
+            </span>
+          )}
         </div>
       </TableCell>
+
+      {/* Amount */}
       <TableCell>₹{order.total_amount}</TableCell>
+
+      {/* Payment */}
+      <TableCell>{order.payment_method}</TableCell>
+
+      {/* Order Status */}
+      <TableCell>{order.status}</TableCell>
+
+      {/* Shipping Status */}
+      <TableCell>{order.shipping_status}</TableCell>
+
+      {/* Courier Info */}
       <TableCell>
-        <PaymentCell order={order} />
-      </TableCell>
-      <TableCell>
-        <StatusCell 
-          status={order.status}
-          type="order"
-          isEditing={isEditing}
-          editingOrder={editingOrder}
-          onStatusChange={onFieldChange}
-        />
-      </TableCell>
-      <TableCell>
-        <StatusCell 
-          status={order.shipping_status}
-          type="shipping"
-          isEditing={isEditing}
-          editingOrder={editingOrder}
-          onStatusChange={onFieldChange}
-        />
-      </TableCell>
-      <TableCell>
-        <CourierInfoCell 
-          courierName={order.courier_name}
-          courierContact={order.courier_contact}
-          trackingId={order.tracking_id}
-          isEditing={isEditing}
-          editingOrder={editingOrder}
-          onFieldChange={onFieldChange}
-        />
-      </TableCell>
-      <TableCell>
-        {isEditing ? (
-          <div className="flex space-x-1">
-            <Button 
-              onClick={onSave} 
-              size="sm" 
-              variant="default"
-              disabled={saving}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              <Save className="h-3 w-3" />
-              {saving && <span className="ml-1 animate-pulse">...</span>}
-            </Button>
-            <Button 
-              onClick={onCancelEdit} 
-              size="sm" 
-              variant="outline"
-              disabled={saving}
-            >
-              <X className="h-3 w-3" />
-            </Button>
-          </div>
+        {order.courier_name ? (
+          <>
+            <p>{order.courier_name}</p>
+            <p className="text-sm text-muted-foreground">
+              {order.courier_contact}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              {order.tracking_id}
+            </p>
+          </>
         ) : (
-          <Button 
-            onClick={() => onEdit(order)} 
-            size="sm" 
-            variant="outline"
-            className="hover:bg-blue-50 hover:border-blue-300"
-          >
-            <Edit className="h-3 w-3" />
+          '—'
+        )}
+      </TableCell>
+
+      {/* Actions */}
+      <TableCell className="space-x-1">
+        <Button size="sm" variant="outline" onClick={onView}>
+          <Eye className="h-4 w-4" />
+        </Button>
+
+        {isEditing ? (
+          <>
+            <Button size="sm" onClick={onSave} disabled={saving}>
+              <Save className="h-4 w-4" />
+            </Button>
+            <Button size="sm" variant="outline" onClick={onCancelEdit}>
+              <X className="h-4 w-4" />
+            </Button>
+          </>
+        ) : (
+          <Button size="sm" variant="outline" onClick={() => onEdit(order)}>
+            <Edit className="h-4 w-4" />
           </Button>
         )}
       </TableCell>
