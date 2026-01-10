@@ -86,7 +86,7 @@ const PaymentScreenshotUpload = ({
               <img
                 src="/qr_payment.jpg"
                 alt="Payment QR Code"
-                className="w-48 h-48 mx-auto"
+                className="w-48 h-60 mx-auto"
               />
             </div>
           </div>
