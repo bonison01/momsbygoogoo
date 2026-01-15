@@ -10,7 +10,7 @@ interface Props {
   onClose: () => void;
 }
 
-const GST_RATE = 0.18;
+const GST_RATE = 1;
 
 const OrderDetailsModal = ({ order, onClose }: Props) => {
   /* ================= ESC CLOSE ================= */
@@ -48,7 +48,7 @@ const OrderDetailsModal = ({ order, onClose }: Props) => {
 
   const gst = subTotal * GST_RATE;
   const halfGST = gst / 2;
-  const total = subTotal + gst;
+  const total = subTotal;
 
   /* ================= PDF ================= */
   const downloadInvoice = () => {
@@ -142,21 +142,21 @@ const OrderDetailsModal = ({ order, onClose }: Props) => {
 
     /* ---------- TOTAL BOX ---------- */
     doc.setDrawColor(220);
-    doc.rect(120, y, 70, 40);
+    doc.rect(120, y, 70, 20);
 
     doc.setFontSize(10);
     doc.text('Subtotal (INR)', 125, y + 8);
     doc.text(subTotal.toFixed(2), 185, y + 8, { align: 'right' });
 
-    doc.text('CGST (9%)', 125, y + 16);
-    doc.text(halfGST.toFixed(2), 185, y + 16, { align: 'right' });
+    // doc.text('CGST (9%)', 125, y + 16);
+    // doc.text(halfGST.toFixed(2), 185, y + 16, { align: 'right' });
 
-    doc.text('SGST (9%)', 125, y + 24);
-    doc.text(halfGST.toFixed(2), 185, y + 24, { align: 'right' });
+    // doc.text('SGST (9%)', 125, y + 24);
+    // doc.text(halfGST.toFixed(2), 185, y + 24, { align: 'right' });
 
     doc.setFont('helvetica', 'bold');
-    doc.text('Total Amount (INR)', 125, y + 34);
-    doc.text(total.toFixed(2), 185, y + 34, { align: 'right' });
+    doc.text('Total Amount (INR)', 125, y + 16);
+    doc.text(total.toFixed(2), 185, y + 16, { align: 'right' });
 
     /* ---------- FOOTER ---------- */
     doc.setFont('helvetica', 'normal');
@@ -251,10 +251,10 @@ const OrderDetailsModal = ({ order, onClose }: Props) => {
               <span>Subtotal</span>
               <span>{subTotal.toFixed(2)} INR</span>
             </div>
-            <div className="flex justify-between text-sm mt-1">
+            {/* <div className="flex justify-between text-sm mt-1">
               <span>GST (18%)</span>
               <span>{gst.toFixed(2)} INR</span>
-            </div>
+            </div> */}
             <div className="flex justify-between font-semibold text-base mt-2">
               <span>Total</span>
               <span>{total.toFixed(2)} INR</span>
