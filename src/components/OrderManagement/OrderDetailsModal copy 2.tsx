@@ -10,8 +10,6 @@ interface Props {
   onClose: () => void;
 }
 
-const GST_RATE = 0.18;
-
 const OrderDetailsModal = ({ order, onClose }: Props) => {
   /* ================= ESC CLOSE ================= */
   useEffect(() => {
@@ -24,7 +22,7 @@ const OrderDetailsModal = ({ order, onClose }: Props) => {
 
   /* ================= ADDRESS FORMAT ================= */
   const address =
-    typeof order.delivery_address === 'object'
+    order.delivery_address
       ? [
           order.delivery_address.address_line_1,
           order.delivery_address.address_line_2,
@@ -34,7 +32,7 @@ const OrderDetailsModal = ({ order, onClose }: Props) => {
         ]
           .filter(Boolean)
           .join(', ')
-      : order.delivery_address || '';
+      : '';
 
   /* ================= PRICE CALC ================= */
   const subTotal = useMemo(
@@ -46,9 +44,14 @@ const OrderDetailsModal = ({ order, onClose }: Props) => {
     [order]
   );
 
-  const gst = subTotal * GST_RATE;
-  const halfGST = gst / 2;
-  const total = subTotal + gst;
+  const isManipur =
+    order.delivery_address?.postal_code?.startsWith('795') ?? false;
+
+  const discount = isManipur ? Math.round(subTotal * 0.1) : 0;
+  const deliveryCharge = isManipur ? 80 : 0;
+  const handlingFee = Number(order.handling_fee || 0);
+
+  const finalTotal = subTotal - discount + deliveryCharge + handlingFee;
 
   /* ================= PDF ================= */
   const downloadInvoice = () => {
@@ -60,12 +63,16 @@ const OrderDetailsModal = ({ order, onClose }: Props) => {
     /* ---------- HEADER ---------- */
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(20);
-    doc.text('JUSTMATENG SERVICE PVT. LTD.', 14, 18);
+    doc.text('Moms by Goo Goo Foods', 14, 18);
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
-    doc.text('Logistics • Delivery • Commerce Enablement', 14, 24);
-    doc.text('GSTIN: 14XXXXX1234X1Z5', 14, 29);
+    doc.text('momsbygoogoofoods@gmail.com • (+91) 60098 09060', 14, 24);
+    doc.text(
+      'Address: Singjamei Chingamakha, Imphal, Manipur-795001',
+      14,
+      29
+    );
 
     doc.text(`Invoice No: ${invoiceNo}`, 140, 18);
     doc.text(`Invoice Date: ${date}`, 140, 24);
@@ -80,49 +87,36 @@ const OrderDetailsModal = ({ order, onClose }: Props) => {
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
-    doc.text(order.user_profile?.full_name || '', 14, 50);
-    doc.text(order.user_profile?.email || '', 14, 56);
-    doc.text(`Phone: ${order.user_profile?.phone || ''}`, 14, 62);
+    doc.text(order.customer.name, 14, 50);
+
+    if (order.customer.email) doc.text(order.customer.email, 14, 56);
+    if (order.customer.phone)
+      doc.text(`Phone: ${order.customer.phone}`, 14, 62);
+
     doc.text(`Address: ${address}`, 14, 68, { maxWidth: 110 });
 
-    /* ---------- ITEMS TABLE (NO ₹, NO ¹) ---------- */
+    /* ---------- ITEMS TABLE ---------- */
     autoTable(doc, {
       startY: 80,
       tableWidth: 160,
       margin: { left: 25 },
-
-      head: [[
-        'Item Description',
-        'Qty',
-        'Unit Price (INR)',
-        'Amount (INR)',
-      ]],
-
+      head: [['Item', 'Qty', 'Rate (INR)', 'Amount (INR)']],
       body: order.order_items.map(item => {
         const qty = Number(item.quantity);
-        const price = Number(item.price);
+        const rate = Number(item.price);
         return [
           item.product?.name || '',
           qty.toString(),
-          price.toFixed(2),
-          (qty * price).toFixed(2),
+          rate.toFixed(2),
+          (qty * rate).toFixed(2),
         ];
       }),
-
       theme: 'plain',
-
-      styles: {
-        fontSize: 10,
-        cellPadding: 6,
-        textColor: 30,
-      },
-
+      styles: { fontSize: 10, cellPadding: 6 },
       headStyles: {
         fillColor: [245, 247, 250],
-        textColor: 20,
         fontStyle: 'bold',
       },
-
       columnStyles: {
         0: { cellWidth: 80 },
         1: { cellWidth: 15, halign: 'center' },
@@ -135,21 +129,34 @@ const OrderDetailsModal = ({ order, onClose }: Props) => {
 
     /* ---------- TOTAL BOX ---------- */
     doc.setDrawColor(220);
-    doc.rect(120, y, 70, 40);
+    doc.rect(120, y, 70, isManipur ? 40 : 34);
 
     doc.setFontSize(10);
-    doc.text('Subtotal (INR)', 125, y + 8);
+    doc.text('Subtotal', 125, y + 8);
     doc.text(subTotal.toFixed(2), 185, y + 8, { align: 'right' });
 
-    doc.text('CGST (9%)', 125, y + 16);
-    doc.text(halfGST.toFixed(2), 185, y + 16, { align: 'right' });
+    if (discount > 0) {
+      doc.setTextColor(0, 128, 0);
+      doc.text('Manipur Discount (10%)', 125, y + 14);
+      doc.text(`-${discount.toFixed(2)}`, 185, y + 14, { align: 'right' });
+      doc.setTextColor(0);
+    }
 
-    doc.text('SGST (9%)', 125, y + 24);
-    doc.text(halfGST.toFixed(2), 185, y + 24, { align: 'right' });
+    if (isManipur) {
+      doc.text('Delivery Charge', 125, y + 20);
+      doc.text(deliveryCharge.toFixed(2), 185, y + 20, { align: 'right' });
+    } else {
+      doc.setFontSize(9);
+      doc.text('Delivery @ ₹120–₹150 / kg', 125, y + 20);
+      doc.setFontSize(10);
+    }
+
+    doc.text('Handling Fee', 125, y + 26);
+    doc.text(handlingFee.toFixed(2), 185, y + 26, { align: 'right' });
 
     doc.setFont('helvetica', 'bold');
-    doc.text('Total Amount (INR)', 125, y + 34);
-    doc.text(total.toFixed(2), 185, y + 34, { align: 'right' });
+    doc.text('Total Payable', 125, y + 34);
+    doc.text(finalTotal.toFixed(2), 185, y + 34, { align: 'right' });
 
     /* ---------- FOOTER ---------- */
     doc.setFont('helvetica', 'normal');
@@ -166,8 +173,14 @@ const OrderDetailsModal = ({ order, onClose }: Props) => {
 
   /* ================= UI ================= */
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="relative w-full max-w-3xl bg-white rounded-xl shadow-xl overflow-hidden">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-3xl bg-white rounded-xl shadow-xl"
+        onClick={e => e.stopPropagation()}
+      >
         {/* HEADER */}
         <div className="flex items-center justify-between px-6 py-4 border-b">
           <div>
@@ -179,82 +192,45 @@ const OrderDetailsModal = ({ order, onClose }: Props) => {
               <span>Shipping: <b>{order.shipping_status}</b></span>
             </div>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-700">
-            <X className="h-5 w-5" />
+          <button onClick={onClose}>
+            <X className="h-5 w-5 text-gray-400" />
           </button>
         </div>
 
-        {/* CONTENT */}
-        <div className="p-6 max-h-[70vh] overflow-y-auto space-y-6">
-          {/* CUSTOMER */}
-          <section>
-            <h3 className="text-sm font-semibold text-gray-700 mb-2">
-              Customer Details
-            </h3>
-            <p className="font-medium">{order.user_profile?.full_name}</p>
-            <p className="text-sm text-gray-600">{order.user_profile?.email}</p>
-            <p className="text-sm">📞 {order.user_profile?.phone}</p>
-          </section>
+        {/* TOTALS */}
+        <div className="p-6 space-y-2 bg-gray-50 border-b">
+          <div className="flex justify-between text-sm">
+            <span>Subtotal</span>
+            <span>{subTotal.toFixed(2)} INR</span>
+          </div>
 
-          {/* ITEMS */}
-          <section>
-            <h3 className="text-sm font-semibold text-gray-700 mb-2">Items</h3>
-            <div className="border rounded-lg divide-y">
-              {order.order_items.map(item => (
-                <div
-                  key={item.id}
-                  className="flex justify-between px-4 py-3 text-sm"
-                >
-                  <span>
-                    {item.product?.name} × {item.quantity}
-                  </span>
-                  <span className="font-medium">
-                    {Number(item.quantity * item.price).toFixed(2)} INR
-                  </span>
-                </div>
-              ))}
+          {discount > 0 && (
+            <div className="flex justify-between text-sm text-green-600">
+              <span>Manipur Discount (10%)</span>
+              <span>-{discount.toFixed(2)} INR</span>
             </div>
-          </section>
+          )}
 
-          {/* TOTALS */}
-          <section className="border rounded-lg p-4 bg-gray-50">
+          {isManipur ? (
             <div className="flex justify-between text-sm">
-              <span>Subtotal</span>
-              <span>{subTotal.toFixed(2)} INR</span>
+              <span>Delivery Charge</span>
+              <span>{deliveryCharge.toFixed(2)} INR</span>
             </div>
-            <div className="flex justify-between text-sm mt-1">
-              <span>GST (18%)</span>
-              <span>{gst.toFixed(2)} INR</span>
-            </div>
-            <div className="flex justify-between font-semibold text-base mt-2">
-              <span>Total</span>
-              <span>{total.toFixed(2)} INR</span>
-            </div>
-          </section>
+          ) : (
+            <p className="text-xs text-orange-600">
+              Extra delivery fee may apply @ ₹120–₹150 per kg
+            </p>
+          )}
 
-          {/* ADDRESS */}
-          <section>
-            <h3 className="text-sm font-semibold text-gray-700 mb-2">
-              Delivery Address
-            </h3>
-            <p className="text-sm text-gray-600">{address}</p>
-          </section>
+          <div className="flex justify-between text-sm">
+            <span>Handling Fee</span>
+            <span>{handlingFee.toFixed(2)} INR</span>
+          </div>
 
-          {/* COURIER */}
-          <section>
-            <h3 className="text-sm font-semibold text-gray-700 mb-2">
-              Courier Information
-            </h3>
-            {order.courier_name ? (
-              <div className="text-sm text-gray-600 space-y-1">
-                <p>{order.courier_name}</p>
-                <p>{order.courier_contact}</p>
-                <p>Tracking ID: {order.tracking_id}</p>
-              </div>
-            ) : (
-              <p className="text-sm text-gray-400">Not assigned</p>
-            )}
-          </section>
+          <div className="flex justify-between font-semibold text-base pt-2 border-t">
+            <span>Total Payable</span>
+            <span>{finalTotal.toFixed(2)} INR</span>
+          </div>
         </div>
 
         {/* FOOTER */}

@@ -31,6 +31,9 @@ export interface Order {
   courier_contact: string | null;
   tracking_id: string | null;
   created_at: string;
+  /* ✅ ADD THESE */
+  delivery_charge?: number;
+  handling_fee?: number;
 
   /* optional profile (registered users only) */
   user_profile?: {

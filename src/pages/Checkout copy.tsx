@@ -37,8 +37,7 @@ interface GuestCheckoutItem {
 
 const Checkout = () => {
   const { user, isAuthenticated } = useAuth();
-  // const { cartItems, getTotalAmount, clearCart } = useCart();
-  const { cartItems, getTotalAmount, clearCart, addToCart } = useCart();
+  const { cartItems, getTotalAmount, clearCart } = useCart();
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
@@ -52,9 +51,7 @@ const Checkout = () => {
   const [checkoutInitialized, setCheckoutInitialized] = useState(false);
   const [paymentScreenshot, setPaymentScreenshot] = useState<File | null>(null);
   const [isUploadingScreenshot, setIsUploadingScreenshot] = useState(false);
-  const [bestSellers, setBestSellers] = useState<any[]>([]);
-
-
+  
   // Guest checkout data from navigation state
   const guestCheckoutData = location.state as { guestCheckout?: boolean; product?: any; quantity?: number } | null;
   const isGuestCheckout = guestCheckoutData?.guestCheckout;
@@ -73,50 +70,17 @@ const Checkout = () => {
     postal_code: '',
     phone: ''
   });
-/* ================= PRICE & LOCATION CALC ================= */
-
-const isManipurPincode = formData.postal_code.startsWith('795');
-
-const deliveryCharge = isManipurPincode ? 80 : 0;
-const handlingFee = 0;
-
-const rawTotal = isGuestCheckout && guestItem
-  ? guestItem.product.price * guestItem.quantity
-  : getTotalAmount();
-
-const discount = isManipurPincode ? Math.round(rawTotal * 0.10) : 0;
-const finalTotal = rawTotal - discount + deliveryCharge + handlingFee;
-
-const MIN_OUTSIDE_MANIPUR_ORDER = 300;
-
-const isBelowMinOutsideManipur =
-  !isManipurPincode && rawTotal < MIN_OUTSIDE_MANIPUR_ORDER;
-
-
-useEffect(() => {
-  if (!isBelowMinOutsideManipur) return;
-
-  supabase
-    .from('products')
-    .select('id, name, price, offer_price, image_url')
-    .eq('is_active', true)
-    .eq('featured', true)
-    .limit(4)
-    .then(({ data }) => {
-      setBestSellers(data || []);
-    });
-}, [isBelowMinOutsideManipur]);
 
   useEffect(() => {
     const initializeCheckout = async () => {
       if (checkoutInitialized) return;
-
+      
       console.log('🔍 Initializing checkout once...');
       console.log('isGuestCheckout:', isGuestCheckout);
       console.log('guestItem:', guestItem);
       console.log('isAuthenticated:', isAuthenticated);
       console.log('cartItems.length:', cartItems.length);
-
+      
       // For guest checkout with specific item, proceed
       if (isGuestCheckout && guestItem) {
         console.log('✅ Guest checkout with item, proceeding...');
@@ -127,7 +91,7 @@ useEffect(() => {
       // For authenticated users, check cart
       if (isAuthenticated) {
         console.log('🔄 Authenticated user - checking existing cart...');
-
+        
         if (cartItems.length === 0) {
           console.log('❌ Authenticated user with empty cart - redirecting to shop');
           toast({
@@ -138,7 +102,7 @@ useEffect(() => {
           navigate('/shop');
           return;
         }
-
+        
         console.log('✅ Cart has items, proceeding with checkout');
         setCheckoutInitialized(true);
         return;
@@ -162,13 +126,12 @@ useEffect(() => {
         navigate('/shop');
         return;
       }
-
+      
       setCheckoutInitialized(true);
     };
 
     initializeCheckout();
   }, [isGuestCheckout, guestItem, isAuthenticated, cartItems.length, navigate, toast, checkoutInitialized]);
-
 
   useEffect(() => {
     // If authenticated, fetch user profile
@@ -182,7 +145,7 @@ useEffect(() => {
 
     try {
       console.log('Fetching profile for user:', user.id);
-
+      
       const { data, error } = await supabase
         .from('profiles')
         .select('full_name, address_line_1, address_line_2, city, state, postal_code, phone')
@@ -213,7 +176,7 @@ useEffect(() => {
     }
   };
 
-
+  const isManipurPincode = formData.postal_code.startsWith('795');
 
   useEffect(() => {
     if (formData.postal_code && !isManipurPincode && paymentMethod === 'cod') {
@@ -233,7 +196,7 @@ useEffect(() => {
     setIsUploadingScreenshot(true);
     setPaymentScreenshot(file);
     setIsUploadingScreenshot(false);
-
+    
     toast({
       title: "Screenshot Uploaded",
       description: "Payment screenshot has been attached to your order",
@@ -243,7 +206,7 @@ useEffect(() => {
   const validateForm = () => {
     const required = ['full_name', 'email', 'address_line_1', 'city', 'state', 'postal_code', 'phone'];
     const missing = required.filter(field => !formData[field as keyof typeof formData]?.trim());
-
+    
     if (missing.length > 0) {
       toast({
         title: "Missing Information",
@@ -273,14 +236,14 @@ useEffect(() => {
       });
       return false;
     }
-
+    
     return true;
   };
 
   const sendOrderConfirmationEmail = async (orderData: any, email: string) => {
     try {
       console.log('📧 Sending order confirmation email to:', email);
-
+      
       const { error } = await supabase.functions.invoke('send-order-confirmation', {
         body: {
           email,
@@ -308,12 +271,12 @@ useEffect(() => {
     try {
       const fileExt = file.name.split('.').pop();
       const fileName = `payment-screenshot-${orderId}.${fileExt}`;
-
+      
       // For now, we'll create a data URL since we don't have storage set up
       // In a real implementation, you'd upload to Supabase Storage
       const reader = new FileReader();
       reader.readAsDataURL(file);
-
+      
       return new Promise((resolve) => {
         reader.onload = () => {
           resolve(reader.result as string);
@@ -333,27 +296,27 @@ useEffect(() => {
     try {
       setIsLoading(true);
       console.log('🚀 Starting order placement process...');
-
+      
       let totalAmount: number;
       let orderItems: any[];
 
       let rawTotal: number;
 
-      if (isGuestCheckout && guestItem) {
-        rawTotal = guestItem.product.price * guestItem.quantity;
-      } else {
-        rawTotal = getTotalAmount();
-      }
+if (isGuestCheckout && guestItem) {
+  rawTotal = guestItem.product.price * guestItem.quantity;
+} else {
+  rawTotal = getTotalAmount();
+}
 
-      if (!isManipurPincode && rawTotal < 300) {
-        toast({
-          title: "Minimum Order Restriction",
-          description: "For outside Manipur, minimum order value must be ₹300.",
-          variant: "destructive",
-        });
-        setIsLoading(false);
-        return;
-      }
+if (!isManipurPincode && rawTotal < 300) {
+  toast({
+    title: "Minimum Order Restriction",
+    description: "For outside Manipur, minimum order value must be ₹300.",
+    variant: "destructive",
+  });
+  setIsLoading(false);
+  return;
+}
 
 
       // Calculate total and prepare order items based on checkout type
@@ -376,9 +339,6 @@ useEffect(() => {
       } else {
         throw new Error('No items to checkout');
       }
-
-      const deliveryCharge = isManipurPincode ? 80 : 0;
-      const handlingFee = 0;
 
       const deliveryAddress = {
         full_name: formData.full_name,
@@ -420,11 +380,7 @@ useEffect(() => {
       // Create order
       const orderData = {
         user_id: isAuthenticated && user ? user.id : null,
-        // total_amount: totalAmount,
-        total_amount: finalTotal,
-        delivery_charge: deliveryCharge,
-        handling_fee: handlingFee,
-
+        total_amount: totalAmount,
         payment_method: paymentMethod,
         delivery_address: deliveryAddress,
         phone: formData.phone,
@@ -455,7 +411,7 @@ useEffect(() => {
       let screenshotUrl = null;
       if (paymentScreenshot && paymentMethod === 'online') {
         screenshotUrl = await uploadPaymentScreenshot(paymentScreenshot, order.id);
-
+        
         if (screenshotUrl) {
           // Update order with screenshot URL
           const { error: updateError } = await supabase
@@ -534,7 +490,7 @@ useEffect(() => {
 
     } catch (error: any) {
       console.error('❌ Checkout error:', error);
-
+      
       toast({
         title: "Checkout Failed",
         description: error.message || "There was an error processing your order. Please try again.",
@@ -548,7 +504,7 @@ useEffect(() => {
   const handleOrderConfirmationClose = () => {
     setShowOrderConfirmation(false);
     setConfirmedOrderData(null);
-
+    
     // Navigate based on user type
     if (isAuthenticated) {
       navigate('/customer-dashboard');
@@ -572,7 +528,7 @@ useEffect(() => {
   }
 
   // Get items to display (either cart items or guest item)
-  const displayItems = isGuestCheckout && guestItem ? [guestItem] :
+  const displayItems = isGuestCheckout && guestItem ? [guestItem] : 
     cartItems.map(item => ({
       product: item.product,
       quantity: item.quantity
@@ -581,18 +537,12 @@ useEffect(() => {
   // const displayTotal = isGuestCheckout && guestItem ? 
   //   guestItem.product.price * guestItem.quantity : getTotalAmount();
 
-  // const rawTotal = isGuestCheckout && guestItem
-  //   ? guestItem.product.price * guestItem.quantity
-  //   : getTotalAmount();
+  const rawTotal = isGuestCheckout && guestItem
+  ? guestItem.product.price * guestItem.quantity
+  : getTotalAmount();
 
-  // const discount = isManipurPincode ? Math.round(rawTotal * 0.10) : 0;
-  // const finalTotal = rawTotal - discount + deliveryCharge + handlingFee;
-
-  // const MIN_OUTSIDE_MANIPUR_ORDER = 300;
-
-  // const isBelowMinOutsideManipur =
-  //   !isManipurPincode && rawTotal < MIN_OUTSIDE_MANIPUR_ORDER;
-
+const discount = isManipurPincode ? Math.round(rawTotal * 0.10) : 0;
+const displayTotal = rawTotal - discount;
 
 
 
@@ -609,7 +559,7 @@ useEffect(() => {
             Back to Shop
           </Button>
           <h1 className="text-3xl font-bold">Checkout</h1>
-
+          
           {/* Show checkout type indicator */}
           {!isAuthenticated ? (
             <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -618,13 +568,13 @@ useEffect(() => {
                 <span className="text-blue-800 font-medium">Guest Checkout</span>
                 <span className="text-blue-600">•</span>
                 <span className="text-blue-700">
-                  <Button
-                    variant="link"
-                    className="text-blue-700 p-0 h-auto"
+                  <Button 
+                    variant="link" 
+                    className="text-blue-700 p-0 h-auto" 
                     onClick={() => navigate('/auth')}
                   >
                     Sign in
-                  </Button>
+                  </Button> 
                   {" "}to save your information and track your order
                 </span>
               </div>
@@ -665,115 +615,20 @@ useEffect(() => {
                     </div>
                   ))}
                   <div className="border-t pt-4">
-                    <div className="border-t pt-4 space-y-2">
-                      <div className="flex justify-between">
-                        <span>Subtotal</span>
-                        <span>₹{rawTotal}</span>
-                      </div>
-
-                      {isManipurPincode && (
-                        <div className="flex justify-between text-green-600 text-sm">
-                          <span>Manipur Discount (10%)</span>
-                          <span>-₹{discount}</span>
-                        </div>
-                      )}
-
-                      {isManipurPincode ? (
-                        <div className="flex justify-between">
-                          <span>Delivery Charge</span>
-                          <span>₹80</span>
-                        </div>
-                      ) : rawTotal >= 300 ? (
-                        <p className="text-sm text-orange-600">
-                          Extra delivery fee may apply at final invoice @ ₹120–₹150 per kg.
-                          Delivery or Shipping charges will be adjusted before dispatch of the parcel.
-                        </p>
-                      ) : null}
-
-
-                      {handlingFee > 0 && (
-                        <div className="flex justify-between">
-                          <span>Handling Fee</span>
-                          <span>₹{handlingFee}</span>
-                        </div>
-                      )}
-
-                      <div className="flex justify-between font-bold text-lg pt-2 border-t">
-                        <span>Total Payable</span>
-                        <span>₹{finalTotal}</span>
-                      </div>
-                      {isBelowMinOutsideManipur && (
-                        <p className="text-sm text-red-600 mt-2">
-                          Minimum order value of ₹300 is required for delivery outside Manipur.
-                        </p>
-                      )}
-                      {isBelowMinOutsideManipur && (
-  <Button
-    variant="outline"
-    className="w-full mt-3"
-    onClick={() => navigate('/shop')}
-  >
-    Add more items from Shop
-  </Button>
-
-  
-)}
-
-{isBelowMinOutsideManipur && bestSellers.length > 0 && (
-  <div className="mt-4">
-    <h4 className="text-sm font-semibold mb-2">
-      Popular items to add
-    </h4>
-
-    <div className="grid grid-cols-2 gap-3">
-      {bestSellers.map(product => (
-        <div
-          key={product.id}
-          className="border rounded-lg p-2 flex flex-col"
-        >
-          <img
-            src={product.image_url || '/placeholder.svg'}
-            className="h-20 w-full object-cover rounded"
-          />
-
-          <p className="text-sm font-medium mt-1 line-clamp-1">
-            {product.name}
-          </p>
-
-          <p className="text-sm font-bold">
-            ₹{product.offer_price ?? product.price}
-          </p>
-
-          <Button
-            size="sm"
-            className="mt-2"
-            onClick={async () => {
-              await addToCart(product.id, 1);
-              toast({
-                title: 'Added to cart',
-                description: product.name,
-              });
-            }}
-          >
-            Add
-          </Button>
-        </div>
-      ))}
-    </div>
+                    <div className="flex justify-between items-center text-lg font-bold">
+                      <span>Total:</span>
+                      <span>₹{displayTotal}</span>
+                    </div>
+                    {isManipurPincode && (
+  <div className="flex justify-between text-green-600 text-sm">
+    <span>Manipur Discount (10%)</span>
+    <span>-₹{discount.toFixed(0)}</span>
   </div>
 )}
 
-                    </div>
-
-                    {isManipurPincode && (
-                      <div className="flex justify-between text-green-600 text-sm">
-                        <span>Manipur Discount (10%)</span>
-                        <span>-₹{discount.toFixed(0)}</span>
-                      </div>
-                    )}
-                    {/* <div>
+                    <div>
                           <p className="text-sm text-gray-600">Additional delivery charges may apply on final invoice.</p>
-                        </div> */}
+                        </div>
                   </div>
                 </div>
               </CardContent>
@@ -844,7 +699,7 @@ useEffect(() => {
                     required
                   />
                 </div>
-
+                
                 <div>
                   <Label htmlFor="address_line_2">Address Line 2</Label>
                   <Input
@@ -913,31 +768,32 @@ useEffect(() => {
               <CardContent>
                 <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
                   <div
-                    className={`flex items-center space-x-2 p-3 border rounded-lg ${!isManipurPincode ? 'opacity-50 cursor-not-allowed' : ''
-                      }`}
-                  >
-                    <RadioGroupItem
-                      value="cod"
-                      id="cod"
-                      disabled={!isManipurPincode}
-                    />
-                    <Label
-                      htmlFor="cod"
-                      className="flex items-center space-x-2 cursor-pointer flex-1"
-                    >
-                      <Truck className="h-5 w-5" />
-                      <div>
-                        <p className="font-medium">Cash on Delivery (COD)</p>
-                        {!isManipurPincode && (
-                          <p className="text-sm text-red-600">
-                            COD available only within Manipur
-                          </p>
-                        )}
-                      </div>
-                    </Label>
-                  </div>
+  className={`flex items-center space-x-2 p-3 border rounded-lg ${
+    !isManipurPincode ? 'opacity-50 cursor-not-allowed' : ''
+  }`}
+>
+  <RadioGroupItem
+    value="cod"
+    id="cod"
+    disabled={!isManipurPincode}
+  />
+  <Label
+    htmlFor="cod"
+    className="flex items-center space-x-2 cursor-pointer flex-1"
+  >
+    <Truck className="h-5 w-5" />
+    <div>
+      <p className="font-medium">Cash on Delivery (COD)</p>
+      {!isManipurPincode && (
+        <p className="text-sm text-red-600">
+          COD available only within Manipur
+        </p>
+      )}
+    </div>
+  </Label>
+</div>
 
-
+                  
                   <div className="flex items-center space-x-2 p-3 border rounded-lg">
                     <RadioGroupItem value="online" id="online" />
                     <Label htmlFor="online" className="flex items-center space-x-2 cursor-pointer flex-1">
@@ -954,7 +810,7 @@ useEffect(() => {
 
             {/* Payment Screenshot Upload - Show only for online payment */}
             {paymentMethod === 'online' && (
-              <PaymentScreenshotUpload
+              <PaymentScreenshotUpload 
                 onScreenshotUpload={handleScreenshotUpload}
                 isUploading={isUploadingScreenshot}
                 uploadedFile={paymentScreenshot}
@@ -964,17 +820,12 @@ useEffect(() => {
             {/* Place Order Button */}
             <Button
               onClick={handlePlaceOrder}
-              disabled={isLoading || isBelowMinOutsideManipur}
-              className="w-full bg-black text-white hover:bg-gray-800 py-3 disabled:opacity-50"
+              disabled={isLoading}
+              className="w-full bg-black text-white hover:bg-gray-800 py-3"
               size="lg"
             >
-              {isBelowMinOutsideManipur
-                ? 'Minimum ₹300 required outside Manipur'
-                : isLoading
-                  ? 'Processing Order...'
-                  : `Place Order - ₹${finalTotal}`}
+              {isLoading ? 'Processing Order...' : `Place Order - ₹${displayTotal}`}
             </Button>
-
           </div>
         </div>
       </div>

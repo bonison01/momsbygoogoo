@@ -10,8 +10,6 @@ interface Props {
   onClose: () => void;
 }
 
-const GST_RATE = 1;
-
 const OrderDetailsModal = ({ order, onClose }: Props) => {
   /* ================= ESC CLOSE ================= */
   useEffect(() => {
@@ -46,9 +44,16 @@ const OrderDetailsModal = ({ order, onClose }: Props) => {
     [order]
   );
 
-  const gst = subTotal * GST_RATE;
-  const halfGST = gst / 2;
-  const total = subTotal;
+  const isManipur =
+    order.delivery_address?.postal_code?.startsWith('795') ?? false;
+
+  const discount = isManipur ? Math.round(subTotal * 0.1) : 0;
+  const deliveryCharge = isManipur ? 80 : 0;
+
+  // ✅ SAFE: does NOT require Order type change
+  const handlingFee = Number((order as any).handling_fee || 0);
+
+  const finalTotal = subTotal - discount + deliveryCharge + handlingFee;
 
   /* ================= PDF ================= */
   const downloadInvoice = () => {
@@ -64,8 +69,12 @@ const OrderDetailsModal = ({ order, onClose }: Props) => {
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
-    doc.text('momsbygoogoofoods@gmail.com •(+91) 60098 09060 ', 14, 24);
-    doc.text('Address: Singjamei Chingamakha, Imphal, Manipur-795001', 14, 29);
+    doc.text('momsbygoogoofoods@gmail.com • (+91) 60098 09060', 14, 24);
+    doc.text(
+      'Address: Singjamei Chingamakha, Imphal, Manipur-795001',
+      14,
+      29
+    );
 
     doc.text(`Invoice No: ${invoiceNo}`, 140, 18);
     doc.text(`Invoice Date: ${date}`, 140, 24);
@@ -82,13 +91,9 @@ const OrderDetailsModal = ({ order, onClose }: Props) => {
     doc.setFontSize(10);
     doc.text(order.customer.name, 14, 50);
 
-    if (order.customer.email) {
-      doc.text(order.customer.email, 14, 56);
-    }
-
-    if (order.customer.phone) {
+    if (order.customer.email) doc.text(order.customer.email, 14, 56);
+    if (order.customer.phone)
       doc.text(`Phone: ${order.customer.phone}`, 14, 62);
-    }
 
     doc.text(`Address: ${address}`, 14, 68, { maxWidth: 110 });
 
@@ -97,76 +102,53 @@ const OrderDetailsModal = ({ order, onClose }: Props) => {
       startY: 80,
       tableWidth: 160,
       margin: { left: 25 },
-
-      head: [[
-        'Item Description',
-        'Qty',
-        'Unit Price (INR)',
-        'Amount (INR)',
-      ]],
-
+      head: [['Item', 'Qty', 'Rate (INR)', 'Amount (INR)']],
       body: order.order_items.map(item => {
         const qty = Number(item.quantity);
-        const price = Number(item.price);
+        const rate = Number(item.price);
         return [
           item.product?.name || '',
           qty.toString(),
-          price.toFixed(2),
-          (qty * price).toFixed(2),
+          rate.toFixed(2),
+          (qty * rate).toFixed(2),
         ];
       }),
-
       theme: 'plain',
-
-      styles: {
-        fontSize: 10,
-        cellPadding: 6,
-        textColor: 30,
-      },
-
-      headStyles: {
-        fillColor: [245, 247, 250],
-        textColor: 20,
-        fontStyle: 'bold',
-      },
-
-      columnStyles: {
-        0: { cellWidth: 80 },
-        1: { cellWidth: 15, halign: 'center' },
-        2: { cellWidth: 30, halign: 'right' },
-        3: { cellWidth: 35, halign: 'right' },
-      },
+      styles: { fontSize: 10, cellPadding: 6 },
+      headStyles: { fillColor: [245, 247, 250], fontStyle: 'bold' },
     });
 
     const y = (doc as any).lastAutoTable.finalY + 10;
 
     /* ---------- TOTAL BOX ---------- */
-    doc.setDrawColor(220);
-    doc.rect(120, y, 70, 20);
+    doc.rect(120, y, 70, 40);
 
     doc.setFontSize(10);
-    doc.text('Subtotal (INR)', 125, y + 8);
+    doc.text('Subtotal', 125, y + 8);
     doc.text(subTotal.toFixed(2), 185, y + 8, { align: 'right' });
 
-    // doc.text('CGST (9%)', 125, y + 16);
-    // doc.text(halfGST.toFixed(2), 185, y + 16, { align: 'right' });
+    if (discount > 0) {
+      doc.setTextColor(0, 128, 0);
+      doc.text('Manipur Discount (10%)', 125, y + 14);
+      doc.text(`-${discount}`, 185, y + 14, { align: 'right' });
+      doc.setTextColor(0);
+    }
 
-    // doc.text('SGST (9%)', 125, y + 24);
-    // doc.text(halfGST.toFixed(2), 185, y + 24, { align: 'right' });
+    if (isManipur) {
+      doc.text('Delivery Charge', 125, y + 20);
+      doc.text(deliveryCharge.toFixed(2), 185, y + 20, { align: 'right' });
+    } else {
+      doc.setFontSize(9);
+      doc.text('Delivery @ ₹120–₹150 / kg', 125, y + 20);
+      doc.setFontSize(10);
+    }
+
+    doc.text('Handling Fee', 125, y + 26);
+    doc.text(handlingFee.toFixed(2), 185, y + 26, { align: 'right' });
 
     doc.setFont('helvetica', 'bold');
-    doc.text('Total Amount (INR)', 125, y + 16);
-    doc.text(total.toFixed(2), 185, y + 16, { align: 'right' });
-
-    /* ---------- FOOTER ---------- */
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
-    doc.setTextColor(120);
-    doc.text(
-      'This is a computer-generated invoice. No signature required.',
-      14,
-      285
-    );
+    doc.text('Total Payable', 125, y + 34);
+    doc.text(finalTotal.toFixed(2), 185, y + 34, { align: 'right' });
 
     doc.save(`${invoiceNo}.pdf`);
   };
@@ -175,11 +157,11 @@ const OrderDetailsModal = ({ order, onClose }: Props) => {
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-      onClick={onClose}               // 👈 close on backdrop click
+      onClick={onClose}
     >
       <div
         className="relative w-full max-w-3xl bg-white rounded-xl shadow-xl overflow-hidden"
-        onClick={(e) => e.stopPropagation()} // 👈 prevent close inside
+        onClick={e => e.stopPropagation()}
       >
         {/* HEADER */}
         <div className="flex items-center justify-between px-6 py-4 border-b">
@@ -192,8 +174,8 @@ const OrderDetailsModal = ({ order, onClose }: Props) => {
               <span>Shipping: <b>{order.shipping_status}</b></span>
             </div>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-700">
-            <X className="h-5 w-5" />
+          <button onClick={onClose}>
+            <X className="h-5 w-5 text-gray-400" />
           </button>
         </div>
 
@@ -205,19 +187,14 @@ const OrderDetailsModal = ({ order, onClose }: Props) => {
               Customer Details
             </h3>
             <p className="font-medium">{order.customer.name}</p>
-
             {order.customer.email && (
               <p className="text-sm text-gray-600">
                 {order.customer.email}
               </p>
             )}
-
             {order.customer.phone && (
-              <p className="text-sm">
-                📞 {order.customer.phone}
-              </p>
+              <p className="text-sm">📞 {order.customer.phone}</p>
             )}
-
             {order.customer.is_guest && (
               <p className="text-xs font-medium text-orange-600">
                 Guest Order
@@ -245,19 +222,39 @@ const OrderDetailsModal = ({ order, onClose }: Props) => {
             </div>
           </section>
 
-          {/* TOTALS */}
-          <section className="border rounded-lg p-4 bg-gray-50">
+          {/* TOTALS (UI UNCHANGED, VALUES UPDATED) */}
+          <section className="border rounded-lg p-4 bg-gray-50 space-y-1">
             <div className="flex justify-between text-sm">
               <span>Subtotal</span>
               <span>{subTotal.toFixed(2)} INR</span>
             </div>
-            {/* <div className="flex justify-between text-sm mt-1">
-              <span>GST (18%)</span>
-              <span>{gst.toFixed(2)} INR</span>
-            </div> */}
-            <div className="flex justify-between font-semibold text-base mt-2">
+
+            {discount > 0 && (
+              <div className="flex justify-between text-sm text-green-600">
+                <span>Manipur Discount (10%)</span>
+                <span>-{discount} INR</span>
+              </div>
+            )}
+
+            {isManipur ? (
+              <div className="flex justify-between text-sm">
+                <span>Delivery Charge</span>
+                <span>{deliveryCharge} INR</span>
+              </div>
+            ) : (
+              <p className="text-xs text-orange-600">
+                Extra delivery fee may apply @ ₹120–₹150 per kg
+              </p>
+            )}
+
+            <div className="flex justify-between text-sm">
+              <span>Handling Fee</span>
+              <span>{handlingFee} INR</span>
+            </div>
+
+            <div className="flex justify-between font-semibold text-base pt-2 border-t">
               <span>Total</span>
-              <span>{total.toFixed(2)} INR</span>
+              <span>{finalTotal.toFixed(2)} INR</span>
             </div>
           </section>
 
