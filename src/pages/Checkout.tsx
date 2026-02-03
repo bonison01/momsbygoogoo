@@ -265,14 +265,14 @@ useEffect(() => {
     }
 
     // Validate payment screenshot for online payment
-    if (paymentMethod === 'online' && !paymentScreenshot) {
-      toast({
-        title: "Payment Screenshot Required",
-        description: "Please upload your payment screenshot to complete the order",
-        variant: "destructive",
-      });
-      return false;
-    }
+    // if (paymentMethod === 'online' && !paymentScreenshot) {
+    //   toast({
+    //     title: "Payment Screenshot Required",
+    //     description: "Please upload your payment screenshot to complete the order",
+    //     variant: "destructive",
+    //   });
+    //   return false;
+    // }
 
     return true;
   };
@@ -944,7 +944,8 @@ useEffect(() => {
                       <CreditCard className="h-5 w-5" />
                       <div>
                         <p className="font-medium">Online Payment (UPI)</p>
-                        <p className="text-sm text-gray-600">Pay using UPI, scan QR code below</p>
+                        <p className="text-sm text-gray-600">Our team will contact you shortly regarding prepaid orders.</p>
+                        {/* <p className="text-sm text-gray-600">Pay using UPI, scan QR code below</p> */}
                       </div>
                     </Label>
                   </div>
@@ -953,13 +954,13 @@ useEffect(() => {
             </Card>
 
             {/* Payment Screenshot Upload - Show only for online payment */}
-            {paymentMethod === 'online' && (
+            {/* {paymentMethod === 'online' && (
               <PaymentScreenshotUpload
                 onScreenshotUpload={handleScreenshotUpload}
                 isUploading={isUploadingScreenshot}
                 uploadedFile={paymentScreenshot}
               />
-            )}
+            )} */}
 
             {/* Place Order Button */}
             <Button
